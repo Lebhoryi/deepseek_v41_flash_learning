@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepSeek-V4.1-Flash · 技术报告第二章 Architecture 思维导图</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #151a22;
+    --card: #1a2029;
+    --card2: #1f2632;
+    --line: #2c3542;
+    --text: #d7dee8;
+    --text-dim: #8b95a3;
+    --gold: #e8b64c;
+    --blue: #5b9bd5;
+    --cyan: #4ec9b0;
+    --purple: #b48ead;
+    --green: #7fb069;
+    --red: #e06c75;
+    --pink: #d88bad;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+    padding: 24px;
+  }
+  header {
+    margin-bottom: 22px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 20px; color: #fff; }
+  header h1 .hl { color: var(--gold); }
+  header .sub { color: var(--text-dim); font-size: 12.5px; margin-top: 4px; }
+  header .badge {
+    display: inline-block; margin: 8px 6px 0 0; padding: 2px 10px;
+    border-radius: 999px; font-size: 11.5px; border: 1px solid var(--line); color: var(--text-dim);
+  }
+  .tree { display: flex; flex-direction: column; align-items: flex-start; }
+  .root {
+    background: linear-gradient(135deg, #24425e, #1c2c44);
+    border: 1px solid var(--blue);
+    color: #fff; font-weight: 700; font-size: 16px;
+    padding: 10px 18px; border-radius: 10px; margin-bottom: 8px;
+  }
+  .children {
+    display: flex; flex-direction: column; align-items: flex-start;
+    margin-left: 26px; padding-left: 18px; position: relative;
+  }
+  .children::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    border-left: 2px solid var(--line);
+  }
+  .branch { position: relative; padding: 4px 0 4px 16px; width: 100%; }
+  .branch::before {
+    content: ""; position: absolute; left: -16px; top: 50%;
+    width: 16px; border-top: 2px solid var(--line);
+  }
+  .branch > .node { position: relative; }
+  .branch > .node::after {
+    content: ""; position: absolute; left: -23px; top: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line); transform: translateY(-50%);
+  }
+  .level1 > .branch > .node::after { background: var(--blue); }
+  .level2 > .branch > .node::after { background: var(--cyan); }
+  .level3 > .branch > .node::after { background: var(--gold); }
+
+  .node {
+    display: inline-block; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; max-width: 640px;
+    user-select: none; transition: border-color .15s, background .15s;
+  }
+  .node:hover { border-color: var(--blue); background: var(--card2); }
+  .node .t { font-weight: 600; color: #fff; }
+  .node .d { color: var(--text-dim); font-size: 12px; margin-top: 1px; }
+  .node .k { color: var(--gold); font-weight: 600; }
+  .node .b { color: var(--blue); font-weight: 600; }
+  .node .c { color: var(--cyan); font-weight: 600; }
+  .node .p { color: var(--purple); font-weight: 600; }
+  .node .g { color: var(--green); font-weight: 600; }
+  .node .r { color: var(--red); font-weight: 600; }
+  .node .fold { float: right; margin-left: 10px; color: var(--text-dim); font-size: 11px; }
+  .l1 { border-left: 3px solid var(--blue); }
+  .l2 { border-left: 3px solid var(--cyan); }
+  .l3 { border-left: 3px solid var(--gold); }
+  .collapsed > .children { display: none; }
+  footer { margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--line); color: var(--text-dim); font-size: 12px; }
+  footer a { color: var(--blue); text-decoration: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>DeepSeek-V4.1-Flash · 技术报告 <span class="hl">第二章 Architecture</span> 思维导图</h1>
+  <div class="sub">来源：DeepSeek_V41_Tech_Report.pdf 第 2 章（Tech_Report.txt L309–811）· 点击节点可折叠/展开</div>
+  <span class="badge">552B 主干 + 196B Engram</span>
+  <span class="badge">激活 8B prefill / 16B decode</span>
+  <span class="badge">40 层 = 20 编码器 + 20 解码器</span>
+  <span class="badge">KV 缓存 890 B/token</span>
+</header>
+
+<div class="tree level1">
+  <div class="root">2. Architecture（网络结构总览）</div>
+  <div class="children">
+
+    <!-- 2.1 Overview -->
+    <div class="branch">
+      <div class="node l1"><span class="t">2.1 Overview 宏观结构</span><span class="fold">▾</span></div>
+      <div class="children">
+        <div class="branch"><div class="node l2"><span class="t">多模态 MoE Transformer</span><span class="d">图像+文本输入 → 自回归文本输出</span></div></div>
+        <div class="branch"><div class="node l2"><span class="t">40 层 = 20 因果编码器 + 20 解码器（CED）</span></div></div>
+        <div class="branch"><div class="node l2"><span class="t">每层：全局注意力 + SWA</span><span class="d">前 2 层仅 SWA；其余层两者皆备</span></div></div>
+        <div class="branch"><div class="node l2"><span class="t">参数与激活</span><span class="d"><span class="k">552B</span> 主干 + <span class="k">196B</span> Engram；激活 <span class="b">8B prefill / 16B decode</span></span></div></div>
+        <div class="branch">
+          <div class="node l2"><span class="t">核心组件栈</span><span class="d">DeepSeekMoE · CED · CSA2 · mHC · Engram · DSpark · FP4 KV</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">MoE</span><span class="d">1 共享 + 384 路由专家、top-6；保留 shared + fine-grained routed（DeepSeekMoE）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">新增：模态感知无辅助损失负载均衡</span><span class="d">文本/图像 token 各自维护 expert 校正 bias：<span class="b">选专家用模态 bias</span>，<span class="b">加权用原始路由分</span>；每步独立更新 → 模态内均衡</span></div></div>
+          </div>
+        </div>
+        <!-- 2.1.1 -->
+        <div class="branch">
+          <div class="node l2"><span class="t">2.1.1 多模态架构（视觉路径）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch">
+              <div class="node l3"><span class="t">DeepSeek-ViT（从零训练）</span><span class="fold">▾</span></div>
+              <div class="children">
+                <div class="branch"><div class="node l3"><span class="t">2D-RoPE 替代绝对位置编码</span><span class="d">支持任意分辨率输入</span></div></div>
+                <div class="branch"><div class="node l3"><span class="t">线性 patch embedding 替代卷积</span><span class="d">为兼容 Muon 优化器</span></div></div>
+                <div class="branch"><div class="node l3"><span class="t">RMSNorm + SwiGLU</span><span class="d">向 LLM 设计对齐</span></div></div>
+              </div>
+            </div>
+            <div class="branch"><div class="node l3"><span class="t">3×3 pixel-unshuffle 下采样</span><span class="d">视觉 token 减少 <span class="k">9 倍</span>，支持约 1344×1344 分辨率</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">MLP projector</span><span class="d">视觉特征映射到 backbone 隐藏维，插入图像 token 位置与文本联合处理</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.2 CED -->
+    <div class="branch">
+      <div class="node l1"><span class="t">2.2 Causal Encoder-Decoder（CED）</span><span class="fold">▾</span></div>
+      <div class="children">
+        <div class="branch"><div class="node l2"><span class="t">动机</span><span class="d">agent 工作流大量 tool calls → prefill 频繁且 KV miss 时开销巨大；要砍 <span class="r">prefill 计算</span></span></div></div>
+        <div class="branch"><div class="node l2"><span class="t">灵感：YoCo</span><span class="d">上半个网络直接共享下半个生成的 KV</span></div></div>
+        <div class="branch">
+          <div class="node l2"><span class="t">设计：全局 KV 由编码器末层投影</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">下 L/2 层 = 因果编码器</span><span class="d">正常计算 hidden state H_{L/2}</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">解码层 (l &gt; L/2) 不再从自己的 H_l 算 KV</span><span class="d">改为：<span class="b">C_l = H_{L/2}·W_l^KV，Z_l = H_{L/2}·W_l^Z</span>（层相关投影权重）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">效果</span><span class="d">prefill 阶段只需计算前 <span class="k">20 层</span> 即可获得整个解码器全局 KV → 计算近乎减半</span></div></div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node l2"><span class="t">SWA 保持逐层计算</span><span class="d">局部 K/V 仍来自当前层 H_l → 增加局部 KV 生成深度，但引入 replay 开销</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">Decoder SWA Bounded Replay</span><span class="d">SWA 有效感受野远小于理论 n_win×L/2 → 只需 prefill 最后一个 n_win 段（细节见 3.2.2）</span></div></div>
+          </div>
+        </div>
+        <div class="branch"><div class="node l2"><span class="t">复杂度收益</span><span class="d">O(NL) → <span class="k">O(NL/2 + n_win×L/2) ≈ O(NL/2)</span>（N ≫ n_win，整体减半）</span></div></div>
+      </div>
+    </div>
+
+    <!-- 2.3 CSA2 -->
+    <div class="branch">
+      <div class="node l1"><span class="t">2.3 Compressed Sparse Attention 2（CSA2）</span><span class="fold">▾</span></div>
+      <div class="children">
+        <div class="branch">
+          <div class="node l2"><span class="t">长上下文三大乘法维度</span><span class="d">三者相乘决定 KV 存储与注意力成本</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">① entry 大小</span><span class="d">GQA 减 KV 头数；MLA 多头共享小 latent</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">② 序列维度</span><span class="d">每 m 个 token 压缩为 1 个 entry（V4 的 CSA/HCA）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">③ 层维度</span><span class="d">跨层复用 cache 与选择（IndexCache / YOIO / HySparse）；但各自只覆盖部分维度</span></div></div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node l2"><span class="t">CSA2 = 三维度联合</span><span class="d">跨层共享 <span class="b">main KV + indexer K</span>，允许复用 <span class="b">Top-K 索引</span>；共享与复用解耦</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">简化的 compressor</span><span class="d">对比 CSA：去掉重叠源条目与绝对位置编码</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">简化的 indexer</span><span class="d">indexer K 直接由 main KV 投影得到（替代 CSA 从 hidden 的独立压缩路径）→ 实现/训练更简单</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">压缩比 1 = 不压缩的特殊情况</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Q 注意力范围</span><span class="d">选出的 Top-K main KV + 层局部 SWA KV</span></div></div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node l2"><span class="t">2.3.1 跨层 KV 与索引复用（三种静态模式）</span><span class="d">每层共同点：都自算 Q 与 SWA KV；差异在 main KV / indexer K / Top-K 从哪来（Figure 4）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">Full 模式（绿）</span><span class="d">自算 main KV + indexer Q + indexer K + 全新 Top-K —— 完整 CSA2 路径，职责等同 V4 的 CSA 层</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Reindex 模式（黄+绿）</span><span class="d">复用最近 main KV 与对应 indexer K；只自算 indexer Q、重打分 → 产生新 Top-K（选择可随层变化，KV 仍共享）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Reuse 模式（红）</span><span class="d">复用最近 main KV + 最新 Top-K 索引；<span class="b">零 indexer 计算</span></span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">与 CED 结合</span><span class="d">decoder 中 Full 模式的层，其全局 KV 由 H_{L/2} 投影而来；Reindex/Reuse 不变</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">收益</span><span class="d">共享 KV 省存储；复用索引省 indexer 计算；Reindex 兼顾"缓存共享 + 选择随层变化"</span></div></div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node l2"><span class="t">2.3.2 Hierarchical Sparse Indexer（分层稀疏索引器）</span><span class="d">仅用于 decoder；跨层复用后，剩余 indexer 仍要打分全量上下文 → 继续砍</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch">
+              <div class="node l3"><span class="t">第一个 Full 模式层（构建候选池）</span><span class="fold">▾</span></div>
+              <div class="children">
+                <div class="branch"><div class="node l3"><span class="t">① 全量打分</span><span class="d">扫描全部因果可见 main KV 位置，选自己的 Top-K</span></div></div>
+                <div class="branch"><div class="node l3"><span class="t">② blockwise 选块</span><span class="d">每块取位置最大 indexer 分，选分数最高的一批块</span></div></div>
+                <div class="branch"><div class="node l3"><span class="t">③ 候选池</span><span class="d">所选块覆盖的位置（例：<span class="k">2048 块 × 8 位置 = 16384 候选</span>）&gt; 最终 Top-K 集合</span></div></div>
+              </div>
+            </div>
+            <div class="branch"><div class="node l3"><span class="t">后续 Reindex 层</span><span class="d">只在候选池内打分选自己的 Top-K → <span class="k">每 query 打分成本与上下文长度无关（常数）</span></span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Reuse 层</span><span class="d">不做新索引，直接用最新 Top-K</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Training-aware</span><span class="d">后训练阶段引入，训练与推理使用同一搜索域，深 layer 在推理域下被优化</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2.4 Extensions -->
+    <div class="branch">
+      <div class="node l1"><span class="t">2.4 高效架构扩展</span><span class="fold">▾</span></div>
+      <div class="children">
+
+        <div class="branch">
+          <div class="node l2"><span class="t">2.4.1 Single-Pass mHC（单遍超连接）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">mHC 回顾（V4）</span><span class="d">n 条残差流：X_{l+1} = B_l·X_l + C_l·F_l(A_l·X_l)，系数 (A,B,C) = H(X_l)</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">V4 多核实现=3 个 kernel 顺序执行</span><span class="d">残差更新 → 系数预测 → 输入混合；激活内存流量 <span class="r">(4n+4)d，是理论下界 (2n+2)d 的 2 倍</span></span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">单遍思路</span><span class="d">混合系数移位：本 block 用上一 block 的 A_{l-1} → 消除依赖，X_l 分块即算即用 → 单 kernel 融合</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Mega-mHC kernel</span><span class="d">部署端：残差更新+输入混合+系数预测融合为 1 个 kernel，流量降到 <span class="k">(2n+2)d</span>（理论下界）；并融入 pre-norm + FP8 转换</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">预训练仍用多核实现</span><span class="d">该移位仅改变各 block 应用的混合系数，实证性能损失可忽略</span></div></div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="node l2"><span class="t">2.4.2 Engram（条件记忆模块，196B）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">定位</span><span class="d">记忆与计算解耦；沿用原设计：tokenizer 压缩 + 多头哈希 + 上下文感知门控 + 多分支集成</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">两处修改</span><span class="d">① 去掉短因果卷积（收益不抵推理栈复杂度）；② 嵌入用 momentum + Sinkhorn 平衡更新（见 2.5）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">配置</span><span class="d">两个模块均分 196B；n-gram 阶 <span class="k">{2,3,4}</span>；8 个哈希头；每阶嵌入维 2048；每头索引表 ~16M（表大小取互异素数）；嵌入表与 K/V 投影均为 <span class="b">FP8</span></span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">放置</span><span class="d">层 <span class="k">1 和 14</span>（0-indexed），均衡训练 pipeline 各阶段的显存</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">推理优化</span><span class="d">确定性寻址 → 嵌入可从主机内存经后台 RDMA 预取，第一模块的预取与第一个 Transformer block 计算重叠</span></div></div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="node l2"><span class="t">2.4.3 DSpark（投机解码）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">总览</span><span class="d">半自回归草稿 + <span class="b">置信度调度验证</span></span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">草稿器</span><span class="d">3 个 Transformer block，SWA 128；<span class="k">单次前向并行产出 5 个草稿位置</span>的 base logits</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Markov head</span><span class="d">轻量建模草稿 token 之间的依赖</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Confidence head</span><span class="d">预测逐位置条件接受概率 → 估计前缀存活概率</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">调度器</span><span class="d">结合存活概率与 profiled 引擎吞吐曲线，按当前系统负载动态选验证长度 → 最大化系统级 token 吞吐</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">与 V3 MTP 的区别</span><span class="d">MTP 随 backbone 全程联合训练；DSpark 在预训练后独立阶段训练（backbone 冻结），后训练期共训但不把 DSpark 梯度回传 backbone → 始终对齐演化中的策略，同时加速在线服务与 RL/OPD rollout</span></div></div>
+          </div>
+        </div>
+
+        <div class="branch">
+          <div class="node l2"><span class="t">2.4.4 FP4 Main KV Cache（主 KV 缓存 FP4 化）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">动机</span><span class="d">V4 已对 indexer Q/K 用 QAT FP4（加速索引计算）；本次把 QAT 扩展到主 KV（目标：<span class="b">省存储</span>而非加速 GEMM）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">格式：OCP 标准 MXFP4</span><span class="d"><span class="k">E2M1</span> 数值 + 每 16 通道 1 个 <span class="k">E4M3 scale</span>（追随 NVFP4 但省略其二级全局 scale）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">关键技巧</span><span class="d">注意力前先反量化 → 无需原生 FP4 矩阵乘支持 → 硬件可移植性好</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">为何可省略全局 scale（精度论证）</span><span class="d">格式量程 448×6=2688；KV latent 量级界：RMS 后 512 通道 L2 范数 ≤ √512 ≈ 22.6，RoPE 保范数；训练观测最大幅值约 10 → 无精度损失</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">量化位置与折衷</span><span class="d">QAT 于后训练引入；<span class="b">RoPE 之后</span>量化（之前量化仅边际收益且增加 decode 开销）；SWA KV 保持 FP8（对量化敏感）；相比 V4 的 FP8 主 KV，存储 <span class="k">近乎减半</span>（HBM 与 SSD 皆是）</span></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2.5 Optimization -->
+    <div class="branch">
+      <div class="node l1"><span class="t">2.5 Optimization（训练优化）</span><span class="fold">▾</span></div>
+      <div class="children">
+        <div class="branch"><div class="node l2"><span class="t">head-wise Muon</span><span class="d">Q 权重按头拆分后再应用 Muon → 每头独立 preconditioner，更好处理头间异质性（GLM 5 / Kimi-K3 亦有实证）</span></div></div>
+        <div class="branch">
+          <div class="node l2"><span class="t">Sinkhorn 平衡更新（Engram 表 / embedding / prediction head）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">动机</span><span class="d">Adam 对这些超大参数矩阵的优化器状态内存不可接受</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">流程（Algorithm 1）</span><span class="d">Nesterov momentum → Sinkhorn 交替行列归一（近似均衡更新矩阵的行列 RMS；掩码近零行）→ √n 缩放（单位行 ℓ2 → 单位行 RMS）→ 学习率校正 <span class="k">γ=0.18</span>（贴近 Moonlight 的 0.2）使更新幅度匹配 Adam</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">关系</span><span class="d">与 Adafactor、Adam-mini 同属利用矩阵轴结构的优化器族</span></div></div>
+          </div>
+        </div>
+        <div class="branch">
+          <div class="node l2"><span class="t">基础配置（按参数类别分配优化器）</span><span class="fold">▾</span></div>
+          <div class="children">
+            <div class="branch"><div class="node l3"><span class="t">AdamW</span><span class="d">norm 层权重与其它非矩阵参数（bias、scale）</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">Muon</span><span class="d">backbone 线性层权重、Engram 投影层、视觉-语言 projector</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">head-wise Muon</span><span class="d">Q 与 K 权重</span></div></div>
+            <div class="branch"><div class="node l3"><span class="t">正则</span><span class="d">decoupled weight decay + Nesterov；norm 层有权重衰减，bias/scale 无；Sinkhorn 更新无权重衰减</span></div></div>
+          </div>
+        </div>
+        <div class="branch"><div class="node l2"><span class="t">Vision encoder 调度</span><span class="d">预训练期冻结直到 LR decay 阶段（最终 norm 层与 VL projector 一直可训）；LR decay 开始时解冻、以更小学习率与 LLM 联合训练</span></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  对应源码：<a href="#" onclick="return false">config.json</a>（compress_ratios / kv_source_layers / index_source_layers / hc_mult / engram_* / dspark_*）
+  · <a href="#" onclick="return false">inference_model.py</a>（Attention 三模式 L613 / Indexer L488 / Block L907 / Transformer L1183）· <a href="#" onclick="return false">inference_kernel.py</a>（hc_split_sinkhorn L465）
+  <br>生成自 Tech_Report.txt 第 2 章（L309–811）· 思维导图可点击折叠深色主题 · DeepSeek-V4.1-Flash 学习笔记
+</footer>
+
+<script>
+  document.querySelectorAll(".node").forEach(function (node) {
+    node.addEventListener("click", function (e) {
+      var branch = node.closest(".branch");
+      if (!branch) return;
+      branch.classList.toggle("collapsed");
+      var fold = node.querySelector(".fold");
+      if (fold) fold.textContent = branch.classList.contains("collapsed") ? "▸" : "▾";
+      e.stopPropagation();
+    });
+  });
+</script>
+</body>
+</html>
