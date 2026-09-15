@@ -57,12 +57,13 @@ python inference/convert.py --hf-ckpt-path $HF_CKPT_PATH --save-path $SAVE_PATH 
 
 ## 学习笔记
 
-- **架构全景**：`docs/ch2-architecture-mindmap.html`（第二章 Architecture 思维导图，可交互折叠）
+- **架构全景**：`docs/dsv41-ch2-architecture-mindmap.html`（第二章 Architecture 思维导图，可交互折叠）
+- **CED 学习记录**：`docs/dsv41-ch2-CED-学习笔记.md`（2.2 CED 自测 8 题 + replay 概念 + CED vs YoCo 两项改进）
 - **创新点 → 源码坐标**（报告章节 → 代码位置）：
 
 | 创新点 | 报告 | 源码 |
 |---|---|---|
-| CED 因果编解码器 | 2.2 | `config.json` compress_ratios / kv_source_layers；`inference/model.py` `Transformer.forward` |
+| CED 因果编解码器 | 2.2 | 仅技术报告 2.2（参考实现 `Transformer.forward` 未实现 CED；`kv_source_layers` 是 CSA2 层间复用，非 CED 投影） |
 | CSA2 三模式（Full/Reindex/Reuse） | 2.3.1 | `inference/model.py` `Attention`(613) / `Indexer`(488) / `Compressor`(429) |
 | 分层稀疏索引器 | 2.3.2 | `inference/model.py` `select_candidate_blocks`(583)；config candidate_* |
 | Single-Pass mHC | 2.4.1 | `inference/model.py` `Block`(907) hc_mixes/pre/post；`kernel.py` hc_split_sinkhorn(465) |
