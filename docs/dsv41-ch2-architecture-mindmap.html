@@ -165,6 +165,7 @@
           </div>
         </div>
         <div class="branch"><div class="node l2"><span class="t">复杂度收益</span><span class="d">O(NL) → <span class="k">O(NL/2 + n_win×L/2) ≈ O(NL/2)</span>（N ≫ n_win，整体减半）</span></div></div>
+        <div class="branch"><div class="node l2"><span class="t">激活参数 8B/16B</span><span class="d">prefill 每 token：前 N−n_win 个只过 encoder = <span class="k">8B</span>；末 n_win 个过全 40 层 = <span class="b">16B</span>。平均 = 8B(1 + n_win/N)，N ≫ n_win 时 ≈ 8B；decode 每 token 恒 16B</span></div></div>
       </div>
     </div>
 

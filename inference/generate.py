@@ -67,8 +67,8 @@ def generate(
     for cur_pos in range(min(prompt_lens), total_len):
         with_images = images is not None and prev_pos == 0
         next_token = model.forward(
-            tokens[:, prev_pos:cur_pos],
-            prev_pos,
+            tokens[:, prev_pos:cur_pos],   # 第一次: [:, 0:min_prompt_len] 整段 prompt
+            prev_pos,                      # 第一次: 0 → prefill；之后 >0 → decode
             images=images if with_images else None,
             token_types=token_types[:, prev_pos:cur_pos] if with_images else None,
         )[0]
